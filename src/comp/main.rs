@@ -128,7 +128,7 @@ fn main() {
         version => {panic!("file offsets not specified for {:?}", version)},
     };
 
-    let mut elf_file = match elf::File::open_path(&config.elf_path) {
+    let elf_file = match elf::File::open_path(&config.elf_path) {
         Ok(f) => f,
         Err(e) => panic!("{:?}",e),
     };
