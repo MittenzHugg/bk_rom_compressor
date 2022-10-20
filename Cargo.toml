@@ -1,0 +1,20 @@
+[package]
+name = "bk_rom_comp"
+version = "0.1.0"
+edition = "2021"
+libs = ["src/librarezip.rlib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rarezip = {path = "rarezip/rust"}
+md5 = "0.7.0"
+elf = "0.0.10"
+
+[[bin]]
+name = "bk_rom_compress"
+path = "src/comp/main.rs"
+
+[[bin]]
+name = "bk_rom_decompress"
+path = "src/decomp/main.rs"

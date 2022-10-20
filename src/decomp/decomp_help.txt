@@ -1,0 +1,4 @@
+bk_rom_decompress is used for decompressing all the overlays in BanjoKazooie
+
+usage:
+bk_rom_decompress /path/to/compressed/rom /path/to/uncompressed/rom
