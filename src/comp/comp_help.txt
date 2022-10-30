@@ -1,8 +1,14 @@
 bk_rom_compress is used for compressing all the overlays into the BanjoKazooie rom
 
 usage:
-bk_rom_compress [(-v | --version) <version_id>] /path/to/elf.elf path/to/uncompressed/rom.z64 path/to/compressed/rom.z64
+bk_rom_compress [(-v | --version) <version_id>] | [(-s | --symbols) path/to/symbol_out.txt] /path/to/elf.elf path/to/uncompressed/rom.z64 path/to/compressed/rom.z64
 
+** -v | --version ** 
+sets version of banjo used
 version_id: 
     us.v10 | pal | jp | us.v11
     default: us.v10
+
+** -s | --symbols **
+exports compressed rom offset symbols to specified file
+
