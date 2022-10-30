@@ -232,12 +232,12 @@ fn main() {
     let data_crc = bk_crc(&uncomp_data_bytes[indx]);
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80390F38", data_crc.0.to_be_bytes());
 
-    // let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "MMM"}).unwrap().0;
-    // replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C300", code_crcs[indx].0.to_be_bytes());
-    // replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C304", code_crcs[indx].1.to_be_bytes());
-    // replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C308", [0;4]);
-    // let data_crc = bk_crc(&uncomp_data_bytes[indx]);
-    // replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C308", data_crc.0.to_be_bytes());
+    let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "MMM"}).unwrap().0;
+    replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C300", code_crcs[indx].0.to_be_bytes());
+    replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C304", code_crcs[indx].1.to_be_bytes());
+    replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C308", [0;4]);
+    let data_crc = bk_crc(&uncomp_data_bytes[indx]);
+    replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C308", data_crc.0.to_be_bytes());
 
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "core2"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_803727F4", code_crcs[indx].1.to_be_bytes());
