@@ -169,9 +169,9 @@ fn main() {
 
     //println!("Calculating Overlay CRCs...");
     let code_crcs :Vec<_>= uncomp_code_bytes.clone().map(|c_bytes| { bk_crc(&c_bytes) }).collect();
-    for (name, crc) in overlay_names.iter().zip(&code_crcs){
-        //println!("{} (0x{:08X?}, 0x{:08X?})", name, crc.0, crc.1);
-    }
+    // for (name, crc) in overlay_names.iter().zip(&code_crcs){
+    //     println!("{} (0x{:08X?}, 0x{:08X?})", name, crc.0, crc.1);
+    // }
 
 
     let replace_symbol = |bytes: &mut Vec<u8>, rom_offset: usize, symbol_name : &str, value : [u8; 4]|{
@@ -181,7 +181,7 @@ fn main() {
                 let offset = sym.value as usize - rom_offset;
                 bytes.splice(offset .. offset+value.len(), value);
             },
-            None => {//println!("warning: could not find {} in elf file", symbol_name);}
+            None => {println!("warning: could not find {} in elf file", symbol_name);}
         };
     };
 
