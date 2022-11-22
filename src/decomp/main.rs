@@ -73,7 +73,7 @@ fn main() {
     assert!(fs::metadata(&source_path).unwrap().is_file(), "Input \"{}\" not found", source_path);
 
     //create output
-    println!("Decompressing ROM {} => {}", source_path, target_path);
+    //println!("Decompressing ROM {} => {}", source_path, target_path);
     
     //read in binary and convert to big endian
     let compressed_rom : Vec<u8> = fs::read(source_path).expect("Could not read file \"{}\"");
@@ -81,7 +81,7 @@ fn main() {
 
     //check game version ?
     let game_id = get_hash(&compressed_rom).expect("Unsupported game hash");
-    println!("Game Identified as {:?}", game_id);
+    //println!("Game Identified as {:?}", game_id);
 
     //get all file offsets
     let file_offsets : Vec<usize> = match game_id {
@@ -113,7 +113,7 @@ fn main() {
         .map(|w| {compressed_rom[w[0]..w[1]].to_vec()});
 
     //decompress slices
-    println!("Decompressing overlays...");
+    // println!("Decompressing overlays...");
     let mut uncompressed_overlays : Vec<Vec<u8>>= compressed_overlays.map(|ovrly|{
         rarezip::bk::unzip(&ovrly)
     }).collect();

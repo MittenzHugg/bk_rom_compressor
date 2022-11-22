@@ -140,7 +140,7 @@ fn main() {
     };
  
     //grab all symbols in elf
-    println!("Finding section symbols...");
+    //println!("Finding section symbols...");
     let symbols : Vec<elf::types::Symbol> = elf_file.sections.iter().map(|section| {
         match elf_file.get_symbols(&section) {
             Ok(s) => s,
@@ -167,10 +167,10 @@ fn main() {
         uncompressed_rom[x.uncompressed_rom.start + x.text.len() .. x.uncompressed_rom.end].to_vec()
     }).collect();
 
-    println!("Calculating Overlay CRCs...");
+    //println!("Calculating Overlay CRCs...");
     let code_crcs :Vec<_>= uncomp_code_bytes.clone().map(|c_bytes| { bk_crc(&c_bytes) }).collect();
     for (name, crc) in overlay_names.iter().zip(&code_crcs){
-        println!("{} (0x{:08X?}, 0x{:08X?})", name, crc.0, crc.1);
+        //println!("{} (0x{:08X?}, 0x{:08X?})", name, crc.0, crc.1);
     }
 
 
@@ -181,7 +181,7 @@ fn main() {
                 let offset = sym.value as usize - rom_offset;
                 bytes.splice(offset .. offset+value.len(), value);
             },
-            None => {println!("warning: could not find {} in elf file", symbol_name);}
+            None => {//println!("warning: could not find {} in elf file", symbol_name);}
         };
     };
 
@@ -245,7 +245,7 @@ fn main() {
     let core1_data_crc = bk_crc(&uncomp_data_bytes[indx]);
     let core1_code_crc = code_crcs[indx];
 
-    println!("Compressing Overlays...");
+    //println!("Compressing Overlays...");
     let mut rzip_bytes : Vec<Vec<u8>> = uncomp_code_bytes.zip(uncomp_data_bytes).map(|(code, data)| {
         let mut code_rzip = rarezip::bk::zip(&code);
         let mut data_rzip = rarezip::bk::zip(&data);
@@ -280,7 +280,7 @@ fn main() {
         i_offset = rzip_bytes.iter().fold(overlay_start_offset, |acc, rzip|{acc + rzip.len()});
 
         //  update crc_bin
-        println!("Calculating ROM CRCs...");
+        //println!("Calculating ROM CRCs...");
         let bk_boot_crc = bk_crc(&bk_boot_bytes);
         let crc_rom_start = find_elf_symbol(&symbols, "crc_ROM_START").value as usize;
         let mut rom_crc_bytes: Vec<u8> = vec![0; 0x20];
@@ -292,7 +292,7 @@ fn main() {
         rom_crc_bytes.splice(0x14..0x18, core1_data_crc.1.to_be_bytes());
 
         //  create output
-        println!("Creating ROM {} => {}", config.uncomp_rom_path, config.out_path);
+        //println!("Creating ROM {} => {}", config.uncomp_rom_path, config.out_path);
         let mut out_file = std::fs::File::create(config.out_path).unwrap();
         out_file.write_all(&uncompressed_rom[..bk_boot_info.uncompressed_rom.start]).unwrap();
         out_file.write_all(&bk_boot_bytes).unwrap();
