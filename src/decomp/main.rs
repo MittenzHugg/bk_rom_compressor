@@ -1,5 +1,5 @@
 use std::env;
-use std::fs::{self, DirBuilder};
+use std::fs::{self};
 use std::io::Write;
 use md5;
 use rarezip;
@@ -127,7 +127,7 @@ fn main() {
 
     let mut rom_len = file_offsets[0];
 
-    for (i, bytes) in uncompressed_overlays.chunks(2).enumerate(){
+    for (_i, bytes) in uncompressed_overlays.chunks(2).enumerate(){
         // println!("placing code {} of length {:8X} at 0x{:08X?}", i, bytes[0].len(), rom_len);
         out_file.write_all(&bytes[0]).unwrap();
         out_file.write_all(&bytes[1]).unwrap();

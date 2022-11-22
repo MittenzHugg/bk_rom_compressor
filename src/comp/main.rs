@@ -74,7 +74,7 @@ impl Config{
 }
 
 fn find_elf_symbol(symbols: &[elf::types::Symbol], name: &str)->elf::types::Symbol{
-    return match symbols.into_iter().find(|s| {s.name == name}){
+    return match symbols.iter().find(|s| {s.name == name}){
         Some(sym) => sym.clone(),
         None => panic!("could not find symbol {} in elf symbols", name),
     }
@@ -95,7 +95,6 @@ impl OverlayInfo {
             name: String::from(name),
             text: std::ops::Range{
                 start:  find_elf_symbol(symbols, format!("{}_TEXT_START", name).as_str()).value as usize,
-                // end:    find_elf_symbol(symbols, format!("{}_TEXT_END", name).as_str()).value as usize,
                 end:  find_elf_symbol(symbols, match name {
                     "core1" => format!("{}_DATA_START_OFFSET", name),
                     _ => format!("{}_TEXT_END", name),
@@ -117,10 +116,6 @@ impl OverlayInfo {
                 end:    find_elf_symbol(symbols, format!("{}_ROM_END", name).as_str()).value as usize, 
             },
         }
-    }
-
-    fn len(&self)->usize{
-        return self.text.len() + self.data.len();
     }
 }
 
@@ -159,7 +154,7 @@ fn main() {
     // symbols.iter().for_each(|s| {println!("{} @ 0x{:08X}", s.name, s.value);});
 
     let bk_boot_info = OverlayInfo::from_elf_symbols("boot_bk_boot", &symbols);
-    let mut bk_boot_bytes = uncompressed_rom[bk_boot_info.uncompressed_rom.clone()].to_vec();
+    let bk_boot_bytes = uncompressed_rom[bk_boot_info.uncompressed_rom.clone()].to_vec();
     // println!{"{:#08X?}", bk_boot_info};
 
     //overlays offsets from elf symbols
@@ -184,9 +179,14 @@ fn main() {
 
 
     let replace_symbol = |bytes: &mut Vec<u8>, rom_offset: usize, symbol_name : &str, value : [u8; 4]|{
-        let s = find_elf_symbol(&symbols, symbol_name);
-        let offset = s.value as usize - rom_offset;
-        bytes.splice(offset .. offset+value.len(), value);
+        let s = symbols.iter().find(|s| {s.name == symbol_name});
+        match s {
+            Some(sym) => {
+                let offset = sym.value as usize - rom_offset;
+                bytes.splice(offset .. offset+value.len(), value);
+            },
+            None => {println!("warning: could not find {} in elf file", symbol_name);}
+        };
     };
 
     //Replace Overlay CRC's
@@ -241,19 +241,13 @@ fn main() {
 
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "core2"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_803727F4", code_crcs[indx].1.to_be_bytes());
+    
     let core2_data_crc = bk_crc(&uncomp_data_bytes[indx]);
-
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "core1"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80276574", core2_data_crc.1.to_be_bytes());
+    
     let core1_data_crc = bk_crc(&uncomp_data_bytes[indx]);
     let core1_code_crc = code_crcs[indx];
-
-    let crc_rom_start = find_elf_symbol(&symbols, "crc_ROM_START");
-    let mut rom_crc_bytes: Vec<u8> = vec![0; 0x20];
-    rom_crc_bytes.splice(8..0xC, core1_code_crc.0.to_be_bytes());
-    rom_crc_bytes.splice(0xC..0x10, core1_code_crc.1.to_be_bytes());
-    rom_crc_bytes.splice(0x10..0x14, core1_data_crc.0.to_be_bytes());
-    rom_crc_bytes.splice(0x14..0x18, core1_data_crc.1.to_be_bytes());
 
     println!("Compressing Overlays...");
     let mut rzip_bytes : Vec<Vec<u8>> = uncomp_code_bytes.zip(uncomp_data_bytes).map(|(code, data)| {
@@ -264,31 +258,31 @@ fn main() {
         return code_rzip
     }).collect();
 
-    //println!("TODO!!! update bk_boot hardcoded compressed rom file offsets...\n");
-
+    //swap GV and MMM
     overlay_names.swap(3, 4);
     rzip_bytes.swap(3, 4);
+
+    //output symbols or calculate end of rzip
     let overlay_start_offset = overlay_offsets[0].uncompressed_rom.start;
     let mut i_offset = overlay_start_offset;
-    
-    let version_string = match config.game_id{
-        GameId::BanjoKazooie(GameVersion::USA) => "us_v10",
-        GameId::BanjoKazooie(GameVersion::PAL) => "pal",
-        GameId::BanjoKazooie(GameVersion::JP) => "jp",
-        GameId::BanjoKazooie(GameVersion::USARevA) => "us_v11"
-    };
-
     if config.symbol_out_path != None {
+        let version_string = match config.game_id{
+            GameId::BanjoKazooie(GameVersion::USA) => "us_v10",
+            GameId::BanjoKazooie(GameVersion::PAL) => "pal",
+            GameId::BanjoKazooie(GameVersion::JP) => "jp",
+            GameId::BanjoKazooie(GameVersion::USARevA) => "us_v11"
+        };
         let mut symbol_file = std::fs::File::create(config.symbol_out_path.unwrap()).unwrap();
         for (name, rzip) in overlay_names.iter().zip(rzip_bytes.iter()){
-            writeln!(symbol_file, "boot_{}_{}_rzip_ROM_START = 0x{:X?};", name, version_string, i_offset);
-            writeln!(symbol_file, "boot_{}_{}_rzip_ROM_END = 0x{:X?};", name, version_string, i_offset + rzip.len());
+            writeln!(symbol_file, "boot_{}_{}_rzip_ROM_START = 0x{:X?};", name, version_string, i_offset).unwrap();
+            writeln!(symbol_file, "boot_{}_{}_rzip_ROM_END = 0x{:X?};", name, version_string, i_offset + rzip.len()).unwrap();
             i_offset = i_offset + rzip.len();
         }
     } else {
         i_offset = rzip_bytes.iter().fold(overlay_start_offset, |acc, rzip|{acc + rzip.len()});
     }
 
+//  update crc_bin
     println!("Calculating ROM CRCs...");
     let bk_boot_crc = bk_crc(&bk_boot_bytes);
     let crc_rom_start = find_elf_symbol(&symbols, "crc_ROM_START").value as usize;
@@ -300,7 +294,7 @@ fn main() {
     rom_crc_bytes.splice(0x10..0x14, core1_data_crc.0.to_be_bytes());
     rom_crc_bytes.splice(0x14..0x18, core1_data_crc.1.to_be_bytes());
 
-//     //create output
+//  create output
     println!("Creating ROM {} => {}", config.uncomp_rom_path, config.comp_rom_path);
     let mut out_file = std::fs::File::create(config.comp_rom_path).unwrap();
     out_file.write_all(&uncompressed_rom[..bk_boot_info.uncompressed_rom.start]).unwrap();
