@@ -19,10 +19,10 @@ pub enum GameId {
 
 #[derive(Debug)]
 struct Config{
-    comp_rom_path: String,
+    out_path: String,
     uncomp_rom_path: String,
     elf_path: String,
-    symbol_out_path: Option<String>,
+    symbol_out: bool,
     game_id: GameId, 
 }
 
@@ -36,15 +36,14 @@ impl Config{
             game_id : GameId::BanjoKazooie(GameVersion::USA),
             elf_path : String::new(),
             uncomp_rom_path : String::new(),
-            comp_rom_path : String::new(),
-            symbol_out_path : None,
+            out_path : String::new(),
+            symbol_out : false,
         };
 
-        config.comp_rom_path = args.next_back().expect(format!("No output path specified\n\n{}", help_text).as_str());
+        config.out_path = args.next_back().expect(format!("No output path specified\n\n{}", help_text).as_str());
         config.uncomp_rom_path = args.next_back().expect(format!("No input ROM path specified\n\n{}", help_text).as_str());
         config.elf_path = args.next_back().expect(format!("No input ELF path specified\n\n{}", help_text).as_str());
         let mut set_version : bool = false;
-        let mut set_symbol_out : bool = false;
         for a in args.skip(1) {
             if set_version {
                 config.game_id = match a.as_str() {
@@ -55,18 +54,15 @@ impl Config{
                     _ => panic!("Unknown version\n\n{}", help_text),
                 };
                 set_version = false;
-            } else if set_symbol_out {
-                config.symbol_out_path = Some(a);
-                set_symbol_out = false;
             } else {
                 match a.as_str() {
                     "-v" | "--version" => {set_version = true;},
-                    "-s" | "--symbols" => {set_symbol_out = true},
+                    "-s" | "--symbols" => {config.symbol_out = true},
                     _ => panic!("Unknown option\n\n{}", help_text),
                 }
             }
         }
-        if set_symbol_out | set_version {
+        if set_version {
             panic!("expected input following command line option")
         }
         return config
@@ -265,51 +261,55 @@ fn main() {
     //output symbols or calculate end of rzip
     let overlay_start_offset = overlay_offsets[0].uncompressed_rom.start;
     let mut i_offset = overlay_start_offset;
-    if config.symbol_out_path != None {
+    if config.symbol_out {
+        //only generate symbol file
         let version_string = match config.game_id{
             GameId::BanjoKazooie(GameVersion::USA) => "us_v10",
             GameId::BanjoKazooie(GameVersion::PAL) => "pal",
             GameId::BanjoKazooie(GameVersion::JP) => "jp",
             GameId::BanjoKazooie(GameVersion::USARevA) => "us_v11"
         };
-        let mut symbol_file = std::fs::File::create(config.symbol_out_path.unwrap()).unwrap();
+        let mut symbol_file = std::fs::File::create(config.out_path).unwrap();
         for (name, rzip) in overlay_names.iter().zip(rzip_bytes.iter()){
             writeln!(symbol_file, "boot_{}_{}_rzip_ROM_START = 0x{:X?};", name, version_string, i_offset).unwrap();
             writeln!(symbol_file, "boot_{}_{}_rzip_ROM_END = 0x{:X?};", name, version_string, i_offset + rzip.len()).unwrap();
             i_offset = i_offset + rzip.len();
         }
     } else {
+        //generate rom
         i_offset = rzip_bytes.iter().fold(overlay_start_offset, |acc, rzip|{acc + rzip.len()});
+
+        //  update crc_bin
+        println!("Calculating ROM CRCs...");
+        let bk_boot_crc = bk_crc(&bk_boot_bytes);
+        let crc_rom_start = find_elf_symbol(&symbols, "crc_ROM_START").value as usize;
+        let mut rom_crc_bytes: Vec<u8> = vec![0; 0x20];
+        rom_crc_bytes.splice(0..4, bk_boot_crc.0.to_be_bytes());
+        rom_crc_bytes.splice(4..8, bk_boot_crc.1.to_be_bytes());
+        rom_crc_bytes.splice(8..0xC, core1_code_crc.0.to_be_bytes());
+        rom_crc_bytes.splice(0xC..0x10, core1_code_crc.1.to_be_bytes());
+        rom_crc_bytes.splice(0x10..0x14, core1_data_crc.0.to_be_bytes());
+        rom_crc_bytes.splice(0x14..0x18, core1_data_crc.1.to_be_bytes());
+
+        //  create output
+        println!("Creating ROM {} => {}", config.uncomp_rom_path, config.out_path);
+        let mut out_file = std::fs::File::create(config.out_path).unwrap();
+        out_file.write_all(&uncompressed_rom[..bk_boot_info.uncompressed_rom.start]).unwrap();
+        out_file.write_all(&bk_boot_bytes).unwrap();
+        out_file.write_all(&rom_crc_bytes).unwrap();
+        out_file.write_all(&uncompressed_rom[crc_rom_start as usize + 0x20 .. overlay_start_offset]).unwrap();
+        for rzip_bin in rzip_bytes{
+            out_file.write_all(&rzip_bin).unwrap();
+        }
+
+        //todo treat as actual level
+        let mut empty_lvl = rarezip::bk::zip(&[0x03,0xE0, 0x00, 0x08, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        empty_lvl.append(&mut rarezip::bk::zip(&[0x0;0x10]));
+        empty_lvl.resize(empty_lvl.len() + (16-1) & !(16-1), 0);
+        out_file.write_all(&empty_lvl).unwrap();
+
+        out_file.write_all(&vec![0xFF; 0x1000000 - (i_offset + 0x20)]).unwrap();
     }
 
-//  update crc_bin
-    println!("Calculating ROM CRCs...");
-    let bk_boot_crc = bk_crc(&bk_boot_bytes);
-    let crc_rom_start = find_elf_symbol(&symbols, "crc_ROM_START").value as usize;
-    let mut rom_crc_bytes: Vec<u8> = vec![0; 0x20];
-    rom_crc_bytes.splice(0..4, bk_boot_crc.0.to_be_bytes());
-    rom_crc_bytes.splice(4..8, bk_boot_crc.1.to_be_bytes());
-    rom_crc_bytes.splice(8..0xC, core1_code_crc.0.to_be_bytes());
-    rom_crc_bytes.splice(0xC..0x10, core1_code_crc.1.to_be_bytes());
-    rom_crc_bytes.splice(0x10..0x14, core1_data_crc.0.to_be_bytes());
-    rom_crc_bytes.splice(0x14..0x18, core1_data_crc.1.to_be_bytes());
 
-//  create output
-    println!("Creating ROM {} => {}", config.uncomp_rom_path, config.comp_rom_path);
-    let mut out_file = std::fs::File::create(config.comp_rom_path).unwrap();
-    out_file.write_all(&uncompressed_rom[..bk_boot_info.uncompressed_rom.start]).unwrap();
-    out_file.write_all(&bk_boot_bytes).unwrap();
-    out_file.write_all(&rom_crc_bytes).unwrap();
-    out_file.write_all(&uncompressed_rom[crc_rom_start as usize + 0x20 .. overlay_start_offset]).unwrap();
-    for rzip_bin in rzip_bytes{
-        out_file.write_all(&rzip_bin).unwrap();
-    }
-
-    //todo treat as actual level
-    let mut empty_lvl = rarezip::bk::zip(&[0x03,0xE0, 0x00, 0x08, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    empty_lvl.append(&mut rarezip::bk::zip(&[0x0;0x10]));
-    empty_lvl.resize(empty_lvl.len() + (16-1) & !(16-1), 0);
-    out_file.write_all(&empty_lvl).unwrap();
-
-    out_file.write_all(&vec![0xFF; 0x1000000 - (i_offset + 0x20)]).unwrap();
 }
