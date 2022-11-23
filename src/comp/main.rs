@@ -154,7 +154,7 @@ fn main() {
     // println!{"{:#08X?}", bk_boot_info};
 
     //overlays offsets from elf symbols
-    let mut overlay_names = vec!["core1", "core2", "CC", "GV", "MMM", "TTC", "MM", "BGS", "RBB", "FP", "SM", "cutscenes", "lair", "fight", "CCW"];
+    let mut overlay_names = vec!["core1", "core2", "CC", "GV", "MMM", "TTC", "MM", "BGS", "RBB", "FP", "SM", "cutscenes", "lair", "fight", "CCW", "emptyLvl"];
     let overlay_offsets : Vec<OverlayInfo> = overlay_names.iter().clone().map(|ovrly_name| {OverlayInfo::from_elf_symbols(ovrly_name, &symbols)}).collect();
     // overlay_offsets.iter().for_each(|info| {println!{"{:#08X?}", info}});
 
@@ -302,13 +302,7 @@ fn main() {
             out_file.write_all(&rzip_bin).unwrap();
         }
 
-        //todo treat as actual level
-        let mut empty_lvl = rarezip::bk::zip(&[0x03,0xE0, 0x00, 0x08, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-        empty_lvl.append(&mut rarezip::bk::zip(&[0x0;0x10]));
-        empty_lvl.resize(empty_lvl.len() + (16-1) & !(16-1), 0);
-        out_file.write_all(&empty_lvl).unwrap();
-
-        out_file.write_all(&vec![0xFF; 0x1000000 - (i_offset + 0x20)]).unwrap();
+        out_file.write_all(&vec![0xFF; 0x1000000 - i_offset]).unwrap();
     }
 
 
