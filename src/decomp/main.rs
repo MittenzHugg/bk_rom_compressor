@@ -88,7 +88,7 @@ fn main() {
         /* ToDo include all 4 versions*/
         GameId::BanjoKazooie(GameVersion::USA) => vec!(
             /*core1*/   0xF19250, 0xF19250 + 0x1D09B, 
-            /*core2*/   0xF37F90, 0xF9CAE0 + 0x64B50, 
+            /*core2*/   0xF37F90, 0xF37F90 + 0x64B50, 
             /*whale*/   0xFA3FD0, 0xFA3FD0 + 0x1DC6,
             /*haunted*/ 0xFA5F50, 0xFA5F50 + 0x2D96,
             /*desert*/  0xFA9150, 0xFA9150 + 0x512E,
@@ -147,9 +147,9 @@ fn main() {
     let mut rom_len = file_offsets[0];
 
     for (_i, bytes) in uncompressed_overlays.chunks(2).enumerate(){
-        println!("placing code {} of length {:8X} at 0x{:08X?}", _i, bytes[0].len(), rom_len);
+        // println!("placing code {} of length {:8X} at 0x{:08X?}", _i, bytes[0].len(), rom_len);
         out_file.write_all(&bytes[0]).unwrap();
-        println!("placing data {} of length {:8X} at 0x{:08X?}", _i, bytes[1].len(), rom_len + bytes[0].len());
+        // println!("placing data {} of length {:8X} at 0x{:08X?}", _i, bytes[1].len(), rom_len + bytes[0].len());
         out_file.write_all(&bytes[1]).unwrap();
         rom_len = rom_len + bytes[0].len() + bytes[1].len();
     }
