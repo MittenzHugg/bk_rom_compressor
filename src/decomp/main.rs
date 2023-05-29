@@ -18,6 +18,7 @@ pub enum GameVersion {
 #[derive(Debug)]
 pub enum GameId {
     BanjoKazooie(GameVersion),
+    BanjoTooie(GameVersion),
 }
 
 #[derive(Debug)]
@@ -32,6 +33,7 @@ fn get_hash(rom : &Vec<u8>) -> Result<GameId, md5::Digest> {
         "06a43bacf5c0687f596df9b018ca6d7f" => Ok(GameId::BanjoKazooie(GameVersion::PAL)),
         "3d3855a86fd5a1b4d30beb0f5a4a85af" => Ok(GameId::BanjoKazooie(GameVersion::JP)),
         "b11f476d4bc8e039355241e871dc08cf" => Ok(GameId::BanjoKazooie(GameVersion::USARevA)),
+        "40e98faa24ac3ebe1d25cb5e5ddf49e4" => Ok(GameId::BanjoTooie(GameVersion::USA)),
         _ => Err(digest)
     }
 }
@@ -124,6 +126,12 @@ fn main() {
             /*coshow*/   0xFFF090, 0xFFF090 + 0xE,
             0xFFF0B0
         ),
+        /* ToDo include other versions*/
+        GameId::BanjoTooie(GameVersion::USA) => vec!(
+            /*core1*/   0x1E29B60, 0x1E3F718, // ends at 0x1E42550
+            /*core2*/   0x1E42550, 0x1E86C76, // ends at 0x1E899B0
+            0x1E899B0
+        ),
         version => {panic!("file offsets not specified for {:?}", version)},
     };
 
@@ -134,11 +142,13 @@ fn main() {
     //decompress slices
     // println!("Decompressing overlays...");
     let mut uncompressed_overlays : Vec<Vec<u8>>= compressed_overlays.map(|ovrly|{
-        rarezip::bk::unzip(&ovrly)
+        rarezip::bk::unzip(&ovrly, matches!(game_id, GameId::BanjoKazooie{..}))
     }).collect();
 
-    uncompressed_overlays.swap(6, 8);
-    uncompressed_overlays.swap(7, 9);
+    if matches!(game_id, GameId::BanjoKazooie{..}) {
+        uncompressed_overlays.swap(6, 8);
+        uncompressed_overlays.swap(7, 9);
+    }
 
     //reconstruct rom
     let mut out_file = std::fs::File::create(target_path).unwrap();
