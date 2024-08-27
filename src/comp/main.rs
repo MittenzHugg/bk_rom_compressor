@@ -1,6 +1,6 @@
 use std::env;
 use std::fs::{self};
-use std::io::{Write};
+use std::io::{Write, Seek, Read, SeekFrom};
 use rarezip;
 use elf;
 
@@ -26,6 +26,7 @@ struct Config{
     game_id: GameId, 
 }
 
+mod cic;
 
 //compress [-v pal] bk.elf bk.uncompressed.z64 bk.compressed.z64
 impl Config{
@@ -293,7 +294,12 @@ fn main() {
 
         //  create output
         //println!("Creating ROM {} => {}", config.uncomp_rom_path, config.out_path);
-        let mut out_file = std::fs::File::create(config.out_path).unwrap();
+        let mut out_file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(config.out_path)
+            .unwrap();
         out_file.write_all(&uncompressed_rom[..bk_boot_info.uncompressed_rom.start]).unwrap();
         out_file.write_all(&bk_boot_bytes).unwrap();
         out_file.write_all(&rom_crc_bytes).unwrap();
@@ -303,7 +309,14 @@ fn main() {
         }
 
         out_file.write_all(&vec![0xFF; 0x1000000 - i_offset]).unwrap();
+
+        //update n64 cic crc
+        let mut crc_bytes = [0; 0x101000];
+        out_file.seek(SeekFrom::Start(0)).unwrap();
+        out_file.read_exact(&mut crc_bytes).unwrap();
+        let crc_value = cic::calculate_crc(&crc_bytes).unwrap();
+        let crc_bytes : Vec<u8> = crc_value.into_iter().map(u32::to_be_bytes).flatten().collect();
+        out_file.seek(SeekFrom::Start(0x10)).unwrap();
+        out_file.write_all(&crc_bytes).unwrap();
     }
-
-
 }
