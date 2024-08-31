@@ -193,6 +193,12 @@ fn main() {
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038AAE8", [0;4]);
     let data_crc = bk_crc(&uncomp_data_bytes[indx]);
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038AAE8", data_crc.0.to_be_bytes());
+    // println!("SM code: {:08x?}, {:08x?}", code_crcs[indx].0, code_crcs[indx].1);
+    // println!("SM data: {:08x?}, {:08x?}", data_crc.0, data_crc.1);
+    let sm_data_crc_complete = bk_crc(&uncomp_data_bytes[indx]);
+    // println!("SM data (with checksum included): {:08x?}, {:08x?}", data_crc.0, data_crc.1);
+    
+    
 
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "MM"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_803899C0", code_crcs[indx].0.to_be_bytes());
@@ -200,6 +206,8 @@ fn main() {
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_803899C8", [0;4]);
     let data_crc = bk_crc(&uncomp_data_bytes[indx]);
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_803899C8", data_crc.0.to_be_bytes());
+    // println!("MM code: {:08x?}, {:08x?}", code_crcs[indx].0, code_crcs[indx].1);
+    // println!("MM data: {:08x?}, {:08x?}", data_crc.0, data_crc.1);
 
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "TTC"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C750", code_crcs[indx].0.to_be_bytes());
@@ -207,6 +215,8 @@ fn main() {
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C758", [0;4]);
     let data_crc = bk_crc(&uncomp_data_bytes[indx]);
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C758", data_crc.0.to_be_bytes());
+    // println!("TTC code: {:08x?}, {:08x?}", code_crcs[indx].0, code_crcs[indx].1);
+    // println!("TTC data: {:08x?}, {:08x?}", data_crc.0, data_crc.1);
 
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "BGS"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80390B20", code_crcs[indx].0.to_be_bytes());
@@ -214,6 +224,9 @@ fn main() {
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80390B28", [0;4]);
     let data_crc = bk_crc(&uncomp_data_bytes[indx]);
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80390B28", data_crc.0.to_be_bytes());
+    // println!("BGS code: {:08x?}, {:08x?}", code_crcs[indx].0, code_crcs[indx].1);
+    // println!("BGS data: {:08x?}, {:08x?}", data_crc.0, data_crc.1);
+
 
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "CC"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80389BE0", code_crcs[indx].0.to_be_bytes());
@@ -221,6 +234,8 @@ fn main() {
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80389BE8", [0;4]);
     let data_crc = bk_crc(&uncomp_data_bytes[indx]);
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80389BE8", data_crc.0.to_be_bytes());
+    // println!("CC code: {:08x?}, {:08x?}", code_crcs[indx].0, code_crcs[indx].1);
+    // println!("CC data: {:08x?}, {:08x?}", data_crc.0, data_crc.1);
 
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "GV"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80390F30", code_crcs[indx].0.to_be_bytes());
@@ -228,6 +243,8 @@ fn main() {
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80390F38", [0;4]);
     let data_crc = bk_crc(&uncomp_data_bytes[indx]);
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80390F38", data_crc.0.to_be_bytes());
+    // println!("GV code: {:08x?}, {:08x?}", code_crcs[indx].0, code_crcs[indx].1);
+    // println!("GV data: {:08x?}, {:08x?}", data_crc.0, data_crc.1);
 
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "MMM"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C300", code_crcs[indx].0.to_be_bytes());
@@ -235,13 +252,18 @@ fn main() {
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C308", [0;4]);
     let data_crc = bk_crc(&uncomp_data_bytes[indx]);
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_8038C308", data_crc.0.to_be_bytes());
+    // println!("MMM code: {:08x?}, {:08x?}", code_crcs[indx].0, code_crcs[indx].1);
+    // println!("MMM data: {:08x?}, {:08x?}", data_crc.0, data_crc.1);
 
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "core2"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_803727F4", code_crcs[indx].1.to_be_bytes());
-    
+    // println!("core2 code: {:08x?}, {:08x?}", code_crcs[indx].0, code_crcs[indx].1);
+
     let core2_data_crc = bk_crc(&uncomp_data_bytes[indx]);
     let indx = overlay_names.clone().into_iter().enumerate().find(|(_, name)| {*name == "core1"}).unwrap().0;
     replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80276574", core2_data_crc.1.to_be_bytes());
+    replace_symbol(&mut uncomp_data_bytes[indx], overlay_offsets[indx].data.start, "D_80275650", sm_data_crc_complete.1.to_be_bytes());
+    // println!("core1 code: {:08x?}, {:08x?}", code_crcs[indx].0, code_crcs[indx].1);
     
     let core1_data_crc = bk_crc(&uncomp_data_bytes[indx]);
     let core1_code_crc = code_crcs[indx];
