@@ -294,8 +294,8 @@ fn main() {
         };
         let mut symbol_file = std::fs::File::create(config.out_path).unwrap();
         for (name, rzip) in overlay_names.iter().zip(rzip_bytes.iter()){
-            writeln!(symbol_file, "boot_{}_rzip_ROM_START = 0x{:X?};", name, version_string, i_offset).unwrap();
-            writeln!(symbol_file, "boot_{}_rzip_ROM_END = 0x{:X?};", name, version_string, i_offset + rzip.len()).unwrap();
+            writeln!(symbol_file, "boot_{}_rzip_ROM_START = 0x{:X?};", name, i_offset).unwrap();
+            writeln!(symbol_file, "boot_{}_rzip_ROM_END = 0x{:X?};", name, i_offset + rzip.len()).unwrap();
             i_offset = i_offset + rzip.len();
         }
     } else {
